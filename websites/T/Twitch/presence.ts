@@ -1,8 +1,7 @@
-import { ActivityType, Assets } from 'premid'
+import { ActivityType, Assets, getTimestamps, getTimestampsFromMedia, timestampFromFormat } from 'premid'
 
 let elapsed = Math.floor(Date.now() / 1000)
 let prevUrl = document.location.href
-let oldLang = 'en'
 
 enum ActivityAssets {
   BlackOps = 'https://cdn.rcd.gg/PreMiD/websites/T/Twitch/assets/0.png',
@@ -114,7 +113,6 @@ async function getStrings() {
       watchStream: 'general.buttonWatchStream',
       watchVideo: 'general.buttonWatchVideo',
     },
-    oldLang,
   )
 }
 const devLogoArr = [ActivityAssets.DevMain, ActivityAssets.DevWhite, ActivityAssets.DevPurple]
@@ -135,7 +133,6 @@ presence.on('UpdateData', async () => {
     showLive,
     showVideo,
     showTimestamps,
-    newLang,
     privacy,
     vidDetail,
     vidState,
@@ -150,7 +147,6 @@ presence.on('UpdateData', async () => {
     presence.getSetting<boolean>('live'),
     presence.getSetting<boolean>('video'),
     presence.getSetting<boolean>('timestamp'),
-    presence.getSetting<string>('lang').catch(() => 'en'),
     presence.getSetting<boolean>('privacy'),
     presence.getSetting<string>('vidDetail'),
     presence.getSetting<string>('vidState'),
@@ -162,10 +158,7 @@ presence.on('UpdateData', async () => {
     presence.getSetting<boolean>('buttons'),
   ])
 
-  if (oldLang !== newLang || !strings) {
-    oldLang = newLang
-    strings = await getStrings()
-  }
+  strings = await getStrings()
 
   let presenceData: PresenceData = {
     type: ActivityType.Watching,
@@ -383,7 +376,7 @@ presence.on('UpdateData', async () => {
 
           presenceData.details = strings.subs
           if (tab)
-            presenceData.state = tab.replace(/(Subscriptions|Abonnements)/, '')
+            presenceData.state = tab.replace(/Subscriptions|Abonnements/, '')
         }
 
         if (path.includes('/wallet/')) {
@@ -543,7 +536,7 @@ presence.on('UpdateData', async () => {
           if (pfp)
             presenceData.largeImageKey = profilePic;
 
-          [presenceData.startTimestamp, presenceData.endTimestamp] = presence.getTimestampsfromMedia(video)
+          [presenceData.startTimestamp, presenceData.endTimestamp] = getTimestampsFromMedia(video)
 
           presenceData.buttons = [
             {
@@ -701,12 +694,12 @@ presence.on('UpdateData', async () => {
           presenceData.details = strings.brandWatch
           presenceData.smallImageKey = Assets.Play
           presenceData.smallImageText = strings.play;
-          [presenceData.startTimestamp, presenceData.endTimestamp] = presence.getTimestamps(
-            presence.timestampFromFormat(
+          [presenceData.startTimestamp, presenceData.endTimestamp] = getTimestamps(
+            timestampFromFormat(
               document.querySelector('.c-controls__time.plyr__time--current')
                 ?.textContent ?? '',
             ),
-            presence.timestampFromFormat('01:30'),
+            timestampFromFormat('01:30'),
           )
         }
         else if (path === '/') {
